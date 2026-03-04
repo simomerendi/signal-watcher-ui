@@ -1,0 +1,35 @@
+---
+import { ApiKeyManager } from '~/components/ApiKeyManager';
+
+if (!Astro.locals.user) return Astro.redirect('/sign-in');
+
+const user = Astro.locals.user;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>API Keys — Signal Watcher</title>
+	</head>
+	<body class="min-h-screen bg-gray-50">
+		<nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+			<a href="/dashboard" class="font-semibold text-gray-900">Signal Watcher</a>
+			<div class="flex items-center gap-4 text-sm">
+				<span class="text-blue-600 font-medium">API Keys</span>
+				<span class="text-gray-400">{user.name}</span>
+				<a href="/logout" class="text-red-600 hover:underline">Sign out</a>
+			</div>
+		</nav>
+		<main class="max-w-2xl mx-auto px-4 py-8">
+			<h1 class="text-2xl font-bold mb-2">API Keys</h1>
+			<p class="text-sm text-gray-600 mb-6">
+				Use API keys to authenticate the <code>swatcher</code> CLI or other integrations.
+			</p>
+			<div class="bg-white rounded-lg shadow p-6">
+				<ApiKeyManager client:load />
+			</div>
+		</main>
+	</body>
+</html>

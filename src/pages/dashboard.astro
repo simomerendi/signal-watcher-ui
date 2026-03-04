@@ -1,0 +1,43 @@
+---
+import { WatcherList } from '~/components/WatcherList';
+import { SignalFeed } from '~/components/SignalFeed';
+
+if (!Astro.locals.user) return Astro.redirect('/sign-in');
+
+const user = Astro.locals.user;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Dashboard — Signal Watcher</title>
+	</head>
+	<body class="min-h-screen bg-gray-50">
+		<nav class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+			<span class="font-semibold text-gray-900">Signal Watcher</span>
+			<div class="flex items-center gap-4 text-sm">
+				<a href="/settings/api-keys" class="text-gray-600 hover:text-gray-900">API Keys</a>
+				<span class="text-gray-400">{user.name}</span>
+				<a href="/logout" class="text-red-600 hover:underline">Sign out</a>
+			</div>
+		</nav>
+		<main class="max-w-5xl mx-auto px-4 py-8">
+			<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+				<div>
+					<h2 class="text-lg font-semibold mb-3">Watchers</h2>
+					<div class="bg-white rounded-lg shadow p-4">
+						<WatcherList client:load />
+					</div>
+				</div>
+				<div class="lg:col-span-2">
+					<h2 class="text-lg font-semibold mb-3">Recent Signals</h2>
+					<div class="bg-white rounded-lg shadow p-4">
+						<SignalFeed client:load />
+					</div>
+				</div>
+			</div>
+		</main>
+	</body>
+</html>

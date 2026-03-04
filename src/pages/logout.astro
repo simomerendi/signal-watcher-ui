@@ -1,0 +1,15 @@
+---
+import { createAuth } from '~/lib/auth';
+
+const env = Astro.locals.runtime.env;
+const auth = createAuth(env.AUTH_DB, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
+const result = await auth.api.signOut({
+	headers: Astro.request.headers,
+	asResponse: true,
+});
+
+const cookies = result.headers.getSetCookie();
+const redirect = Astro.redirect('/sign-in');
+cookies.forEach((c: string) => redirect.headers.append('Set-Cookie', c));
+return redirect;
+---

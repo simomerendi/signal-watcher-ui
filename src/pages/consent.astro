@@ -1,0 +1,92 @@
+---
+import { createAuth } from '~/lib/auth';
+
+if (!Astro.locals.user) return Astro.redirect('/sign-in');
+
+const env = Astro.locals.runtime.env;
+const auth = createAuth(env.AUTH_DB, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
+
+// Extract OIDC params from query string
+const url = new URL(Astro.request.url);
+const clientId = url.searchParams.get('client_id') ?? '';
+const redirectUri = url.searchParams.get('redirect_uri') ?? '';
+const scope = url.searchParams.get('scope') ?? '';
+const state = url.searchParams.get('state') ?? '';
+const codeChallenge = url.searchParams.get('code_challenge') ?? '';
+const codeChallengeMethod = url.searchParams.get('code_challenge_method') ?? '';
+
+if (Astro.request.method === 'POST') {
+	const data = await Astro.request.formData();
+	const accepted = data.get('action') === 'accept';
+
+	const result = await auth.api.consentOAuth({
+		body: {
+			clientId,
+			redirectUri,
+			scope: scope.split(' '),
+			state,
+			codeChallenge,
+			codeChallengeMethod,
+			accept: accepted,
+		},
+		headers: Astro.request.headers,
+		asResponse: true,
+	});
+
+	if (result.ok) {
+		const json = await result.json() as { redirectURI?: string };
+		if (json.redirectURI) return Astro.redirect(json.redirectURI);
+	}
+	return Astro.redirect('/dashboard');
+}
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Authorize — Signal Watcher</title>
+	</head>
+	<body class="min-h-screen bg-gray-50 flex items-center justify-center">
+		<div class="w-full max-w-md">
+			<div class="bg-white rounded-lg shadow p-8">
+				<h2 class="text-xl font-semibold mb-2">Authorize Application</h2>
+				<p class="text-sm text-gray-600 mb-6">
+					A client application is requesting access to your Signal Watcher account.
+				</p>
+				{scope && (
+					<div class="mb-6">
+						<p class="text-sm font-medium text-gray-700 mb-2">Requested scopes:</p>
+						<ul class="text-sm text-gray-600 space-y-1">
+							{scope.split(' ').map((s) => (
+								<li class="flex items-center gap-2">
+									<span class="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+									{s}
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
+				<form method="POST" class="flex gap-3">
+					<button
+						name="action"
+						value="accept"
+						type="submit"
+						class="flex-1 bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700"
+					>
+						Allow
+					</button>
+					<button
+						name="action"
+						value="deny"
+						type="submit"
+						class="flex-1 bg-gray-100 text-gray-700 rounded px-4 py-2 text-sm font-medium hover:bg-gray-200"
+					>
+						Deny
+					</button>
+				</form>
+			</div>
+		</div>
+	</body>
+</html>
