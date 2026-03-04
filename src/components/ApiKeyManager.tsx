@@ -19,9 +19,9 @@ export function ApiKeyManager() {
 
 	const loadKeys = () => {
 		setLoading(true);
-		fetch('/api/auth/api-key/list-keys', { method: 'GET' })
-			.then((r) => r.json() as Promise<ApiKey[]>)
-			.then(setKeys)
+		fetch('/api/auth/api-key/list', { method: 'GET' })
+			.then((r) => r.json() as Promise<{ apiKeys: ApiKey[] }>)
+			.then((data) => setKeys(data.apiKeys ?? []))
 			.catch(() => setError('Failed to load API keys'))
 			.finally(() => setLoading(false));
 	};
@@ -54,7 +54,7 @@ export function ApiKeyManager() {
 	};
 
 	const revokeKey = async (id: string) => {
-		await fetch('/api/auth/api-key/delete-key', {
+		await fetch('/api/auth/api-key/delete', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ keyId: id }),

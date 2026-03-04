@@ -25,8 +25,8 @@ export function SignalFeed({ watcher, limit = 20 }: Props) {
 		const params = new URLSearchParams({ limit: String(limit) });
 		if (watcher) params.set('watcher', watcher);
 		fetch(`/api/proxy/signals?${params}`)
-			.then((r) => r.json() as Promise<Signal[]>)
-			.then(setSignals)
+			.then((r) => r.json() as Promise<{ signals: Signal[] }>)
+			.then((data) => setSignals(data.signals ?? []))
 			.catch(() => setError('Failed to load signals'))
 			.finally(() => setLoading(false));
 	}, [watcher, limit]);

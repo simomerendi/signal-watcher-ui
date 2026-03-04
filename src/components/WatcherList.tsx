@@ -14,8 +14,8 @@ export function WatcherList() {
 
 	useEffect(() => {
 		fetch('/api/proxy/watchers')
-			.then((r) => r.json() as Promise<Watcher[]>)
-			.then(setWatchers)
+			.then((r) => r.json() as Promise<{ watchers: Watcher[] }>)
+			.then((data) => setWatchers(data.watchers ?? []))
 			.catch(() => setError('Failed to load watchers'))
 			.finally(() => setLoading(false));
 	}, []);
