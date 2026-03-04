@@ -15,6 +15,7 @@
 	],
 	"vars": {
 		"BETTER_AUTH_URL": "http://localhost:4321",
-		"SIGNAL_WATCHER_URL": "http://localhost:8787"
+		"SIGNAL_WATCHER_URL": "http://localhost:8787",
+		"ADMIN_TOKEN": ""
 	}
 }

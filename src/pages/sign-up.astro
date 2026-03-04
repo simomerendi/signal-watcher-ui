@@ -1,29 +1,72 @@
 ---
 import { createAuth } from '~/lib/auth';
+import { drizzle } from 'drizzle-orm/d1';
+import { eq } from 'drizzle-orm';
+import { invitation } from '~/db/schema';
 
 if (Astro.locals.user) return Astro.redirect('/dashboard');
 
-let error = '';
-if (Astro.request.method === 'POST') {
+const env = Astro.locals.runtime.env;
+const db = drizzle(env.AUTH_DB);
+
+async function validateToken(token: string) {
+	const [row] = await db
+		.select()
+		.from(invitation)
+		.where(eq(invitation.token, token))
+		.limit(1);
+	if (!row) return null;
+	if (row.usedAt) return null;
+	if (row.expiresAt && new Date(row.expiresAt) < new Date()) return null;
+	return row;
+}
+
+const tokenParam = Astro.url.searchParams.get('token') ?? '';
+let inviteError = '';
+let formError = '';
+let validInvite: Awaited<ReturnType<typeof validateToken>> = null;
+
+if (!tokenParam) {
+	inviteError = 'You need an invitation to sign up.';
+} else {
+	validInvite = await validateToken(tokenParam);
+	if (!validInvite) {
+		inviteError = 'This invitation is invalid or has already been used.';
+	}
+}
+
+if (Astro.request.method === 'POST' && validInvite) {
 	const data = await Astro.request.formData();
-	const env = Astro.locals.runtime.env;
-	const auth = createAuth(env.AUTH_DB, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
-	const result = await auth.api.signUpEmail({
-		body: {
-			name: data.get('name') as string,
-			email: data.get('email') as string,
-			password: data.get('password') as string,
-		},
-		asResponse: true,
-	});
-	if (!result.ok) {
-		const json = await result.json() as { message?: string };
-		error = json.message ?? 'Registration failed.';
+	const token = data.get('token') as string;
+	const name = data.get('name') as string;
+	const email = data.get('email') as string;
+	const password = data.get('password') as string;
+
+	// Re-validate to prevent races
+	const inv = await validateToken(token);
+	if (!inv) {
+		formError = 'This invitation is invalid or has already been used.';
+	} else if (inv.email && inv.email !== email) {
+		formError = 'This invitation is restricted to a different email address.';
 	} else {
-		const cookies = result.headers.getSetCookie();
-		const redirect = Astro.redirect('/dashboard');
-		cookies.forEach((c: string) => redirect.headers.append('Set-Cookie', c));
-		return redirect;
+		const auth = createAuth(env.AUTH_DB, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
+		const result = await auth.api.signUpEmail({
+			body: { name, email, password },
+			asResponse: true,
+		});
+		if (!result.ok) {
+			const json = await result.json() as { message?: string };
+			formError = json.message ?? 'Registration failed.';
+		} else {
+			await db
+				.update(invitation)
+				.set({ usedAt: new Date().toISOString() })
+				.where(eq(invitation.token, token));
+			const cookies = result.headers.getSetCookie();
+			const redirect = Astro.redirect('/dashboard');
+			cookies.forEach((c: string) => redirect.headers.append('Set-Cookie', c));
+			return redirect;
+		}
 	}
 }
 ---
@@ -40,49 +83,55 @@ if (Astro.request.method === 'POST') {
 			<h1 class="text-2xl font-bold text-center mb-6">Signal Watcher</h1>
 			<div class="bg-white rounded-lg shadow p-8">
 				<h2 class="text-xl font-semibold mb-4">Create Account</h2>
-				{error && <p class="text-red-600 text-sm mb-4">{error}</p>}
-				<form method="POST" class="space-y-4">
-					<div>
-						<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-						<input
-							id="name"
-							name="name"
-							type="text"
-							placeholder="Your name"
-							required
-							class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-					</div>
-					<div>
-						<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-						<input
-							id="email"
-							name="email"
-							type="email"
-							placeholder="you@example.com"
-							required
-							class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-					</div>
-					<div>
-						<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-						<input
-							id="password"
-							name="password"
-							type="password"
-							placeholder="••••••••"
-							required
-							minlength="8"
-							class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-					</div>
-					<button
-						type="submit"
-						class="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-					>
-						Create Account
-					</button>
-				</form>
+				{inviteError && <p class="text-red-600 text-sm mb-4">{inviteError}</p>}
+				{!inviteError && (
+					<>
+						{formError && <p class="text-red-600 text-sm mb-4">{formError}</p>}
+						<form method="POST" class="space-y-4">
+							<input type="hidden" name="token" value={tokenParam} />
+							<div>
+								<label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+								<input
+									id="name"
+									name="name"
+									type="text"
+									placeholder="Your name"
+									required
+									class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+								<input
+									id="email"
+									name="email"
+									type="email"
+									placeholder="you@example.com"
+									required
+									class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+								<input
+									id="password"
+									name="password"
+									type="password"
+									placeholder="••••••••"
+									required
+									minlength="8"
+									class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<button
+								type="submit"
+								class="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							>
+								Create Account
+							</button>
+						</form>
+					</>
+				)}
 				<p class="text-sm text-center mt-4 text-gray-600">
 					Already have an account? <a href="/sign-in" class="text-blue-600 hover:underline">Sign in</a>
 				</p>

@@ -186,6 +186,15 @@ export const oauthConsent = sqliteTable(
   ],
 );
 
+export const invitation = sqliteTable('invitation', {
+	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	token: text('token').notNull().unique().$defaultFn(() => crypto.randomUUID()),
+	email: text('email'),
+	usedAt: text('used_at'),
+	createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+	expiresAt: text('expires_at'),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
