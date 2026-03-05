@@ -23,7 +23,7 @@ export const ALL: APIRoute = async (ctx) => {
 		body: ['GET', 'HEAD'].includes(ctx.request.method) ? undefined : await ctx.request.text(),
 	});
 
-	const response = await fetch(proxyRequest);
+	const response = await env.SIGNAL_WATCHER.fetch(proxyRequest);
 	const body = await response.text();
 
 	return new Response(body, {

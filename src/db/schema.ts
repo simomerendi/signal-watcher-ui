@@ -186,6 +186,18 @@ export const oauthConsent = sqliteTable(
   ],
 );
 
+// One-time codes issued by /auth/cli to the browser after sign-in.
+// The CLI exchanges a code (via POST /api/auth/cli/exchange) for a long-lived API key.
+// Codes expire in 10 minutes and are single-use.
+export const cliAuthCode = sqliteTable('cli_auth_code', {
+	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	code: text('code').notNull().unique().$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id').notNull(),
+	usedAt: text('used_at'),
+	expiresAt: text('expires_at').notNull(),
+	createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const invitation = sqliteTable('invitation', {
 	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
 	token: text('token').notNull().unique().$defaultFn(() => crypto.randomUUID()),

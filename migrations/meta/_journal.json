@@ -15,6 +15,13 @@
       "when": 1772644049589,
       "tag": "0001_mature_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772704385242,
+      "tag": "0002_nosy_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

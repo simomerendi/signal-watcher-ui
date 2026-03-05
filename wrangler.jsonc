@@ -2,20 +2,27 @@
 	"name": "signal-watcher-ui",
 	"main": "dist/_worker.js",
 	"compatibility_date": "2025-01-01",
-	"compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"assets": {
 		"directory": "dist"
 	},
+	"services": [
+		{
+			"binding": "SIGNAL_WATCHER",
+			"service": "cloudflare-signal-watcher"
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "AUTH_DB",
 			"database_name": "signal-watcher-auth",
-			"database_id": "<set after: wrangler d1 create signal-watcher-auth>"
+			"database_id": "5d773e6f-67ff-4c6c-bf87-7d97bf0f2c30"
 		}
 	],
 	"vars": {
-		"BETTER_AUTH_URL": "http://localhost:4321",
-		"SIGNAL_WATCHER_URL": "http://localhost:8787",
-		"ADMIN_TOKEN": ""
+		"BETTER_AUTH_URL": "https://signal-watcher-ui.merendis.workers.dev",
+		"SIGNAL_WATCHER_URL": "https://cloudflare-signal-watcher.merendis.workers.dev"
 	}
 }

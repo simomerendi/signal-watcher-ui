@@ -1,0 +1,37 @@
+---
+/**
+ * GET /auth/cli — entry point for the `swatcher login` browser flow.
+ *
+ * Validates ?state= and ?redirect_uri= (must be http://localhost:*).
+ * If the user is not signed in, redirects to /sign-in preserving params via ?next=.
+ * If the user is signed in, generates a one-time code, stores it in D1, and
+ * redirects to redirect_uri?code=<code>&state=<state>.
+ */
+import { drizzle } from 'drizzle-orm/d1';
+import { cliAuthCode } from '~/db/schema';
+
+const state = Astro.url.searchParams.get('state') ?? '';
+const redirectUri = Astro.url.searchParams.get('redirect_uri') ?? '';
+
+if (!state) return new Response('Missing state parameter', { status: 400 });
+if (!redirectUri || !/^http:\/\/localhost(:\d+)?/.test(redirectUri)) {
+	return new Response('Invalid redirect_uri — must be http://localhost:<port>', { status: 400 });
+}
+
+if (!Astro.locals.user) {
+	const next = `/auth/cli?state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+	return Astro.redirect(`/sign-in?next=${encodeURIComponent(next)}`);
+}
+
+const env = Astro.locals.runtime.env;
+const db = drizzle(env.AUTH_DB);
+const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+const [row] = await db
+	.insert(cliAuthCode)
+	.values({ userId: Astro.locals.user.id, expiresAt })
+	.returning({ code: cliAuthCode.code });
+
+const sep = redirectUri.includes('?') ? '&' : '?';
+return Astro.redirect(`${redirectUri}${sep}code=${row.code}&state=${encodeURIComponent(state)}`);
+---

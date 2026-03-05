@@ -12,4 +12,11 @@ export default defineConfig({
 		},
 	}),
 	integrations: [react(), tailwind()],
+	vite: {
+		resolve: {
+			alias: {
+				'react-dom/server': 'react-dom/server.edge',
+			},
+		},
+	},
 });

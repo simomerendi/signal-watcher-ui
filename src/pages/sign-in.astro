@@ -3,9 +3,15 @@ import { createAuth } from '~/lib/auth';
 
 if (Astro.locals.user) return Astro.redirect('/dashboard');
 
+const nextParam = Astro.url.searchParams.get('next') ?? '';
+// Only allow internal redirects to prevent open-redirect attacks
+const safeNext = nextParam.startsWith('/') ? nextParam : '/dashboard';
+
 let error = '';
 if (Astro.request.method === 'POST') {
 	const data = await Astro.request.formData();
+	const next = data.get('next') as string;
+	const redirectTo = next?.startsWith('/') ? next : '/dashboard';
 	const env = Astro.locals.runtime.env;
 	const auth = createAuth(env.AUTH_DB, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
 	const result = await auth.api.signInEmail({
@@ -19,7 +25,7 @@ if (Astro.request.method === 'POST') {
 		error = 'Invalid email or password.';
 	} else {
 		const cookies = result.headers.getSetCookie();
-		const redirect = Astro.redirect('/dashboard');
+		const redirect = Astro.redirect(redirectTo);
 		cookies.forEach((c: string) => redirect.headers.append('Set-Cookie', c));
 		return redirect;
 	}
@@ -40,6 +46,7 @@ if (Astro.request.method === 'POST') {
 				<h2 class="text-xl font-semibold mb-4">Sign In</h2>
 				{error && <p class="text-red-600 text-sm mb-4">{error}</p>}
 				<form method="POST" class="space-y-4">
+					<input type="hidden" name="next" value={safeNext} />
 					<div>
 						<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
 						<input
