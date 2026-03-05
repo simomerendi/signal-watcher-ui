@@ -14,7 +14,15 @@ const state = Astro.url.searchParams.get('state') ?? '';
 const redirectUri = Astro.url.searchParams.get('redirect_uri') ?? '';
 
 if (!state) return new Response('Missing state parameter', { status: 400 });
-if (!redirectUri || !/^http:\/\/localhost(:\d+)?/.test(redirectUri)) {
+
+const isLocalhost = /^http:\/\/localhost(:\d+)?/.test(redirectUri);
+const extraOrigins = (Astro.locals.runtime.env.EXTRA_CLI_REDIRECT_ORIGINS ?? '')
+	.split(',')
+	.map((s) => s.trim())
+	.filter(Boolean);
+const isAllowedExtra = extraOrigins.some((origin) => redirectUri.startsWith(origin));
+
+if (!redirectUri || (!isLocalhost && !isAllowedExtra)) {
 	return new Response('Invalid redirect_uri — must be http://localhost:<port>', { status: 400 });
 }
 

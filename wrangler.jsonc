@@ -23,6 +23,7 @@
 	],
 	"vars": {
 		"BETTER_AUTH_URL": "https://signal-watcher-ui.merendis.workers.dev",
-		"SIGNAL_WATCHER_URL": "https://cloudflare-signal-watcher.merendis.workers.dev"
+		"SIGNAL_WATCHER_URL": "https://cloudflare-signal-watcher.merendis.workers.dev",
+		"EXTRA_CLI_REDIRECT_ORIGINS": "https://signal-watcher-mcp.merendis.workers.dev"
 	}
 }

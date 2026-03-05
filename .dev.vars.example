@@ -1,0 +1,5 @@
+BETTER_AUTH_SECRET=<any-32-char-string-for-local-dev>
+BETTER_AUTH_URL=http://localhost:4321
+SIGNAL_WATCHER_URL=http://localhost:8787
+SIGNAL_WATCHER_TOKEN=<bearer-token-matching-cloudflare-signal-watcher-API_TOKEN>
+ADMIN_TOKEN=<admin-token-matching-cloudflare-signal-watcher-API_TOKEN>

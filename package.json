@@ -2,6 +2,8 @@
 	"name": "signal-watcher-ui",
 	"version": "0.1.0",
 	"description": "Astro UI for signal-watcher (single-tenant)",
+	"repository": { "type": "git", "url": "https://github.com/simomerendi/signal-watcher-ui" },
+	"license": "MIT",
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",

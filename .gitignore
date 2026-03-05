@@ -4,3 +4,8 @@ dist/
 .wrangler/
 worker-configuration.d.ts
 .dev.vars
+.DS_Store
+*.lcov
+.eslintcache
+Thumbs.db
+.claude/
